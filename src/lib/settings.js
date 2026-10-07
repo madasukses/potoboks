@@ -39,3 +39,25 @@ export async function uploadLogo(file) {
   const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
   return data.publicUrl;
 }
+
+/**
+ * Reset event: kosongkan nama_event + reset sequence ke 1
+ */
+export async function resetEvent() {
+  // 1. Reset nama event di settings
+  await supabase
+    .from('settings')
+    .update({
+      nama_event: null,
+      event_mulai_dari: 1,
+      update_at: new Date().toISOString(),
+    })
+    .eq('id', 1);
+
+  // 2. Reset sequence
+  const { error } = await supabase.rpc('reset_session_number', {
+    start_at: 1,
+  });
+
+  if (error) throw error;
+}

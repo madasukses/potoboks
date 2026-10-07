@@ -1,15 +1,39 @@
 import { supabase, BUCKET } from '../supabase';
 
 /**
- * Generate slug nomor urut: potoboks001, potoboks002, ...
- * Pakai RPC Supabase (next_session_number) supaya atomic.
+ * Generate slug: [namaevent]-[nomor] atau potoboks[nomor]
+ * Contoh: budi-wedding-001, potoboks002
  */
 async function generateSlug() {
-  const { data, error } = await supabase.rpc('next_session_number');
+  // 1. Ambil nama event dari settings
+  const { data: settings } = await supabase
+    .from('settings')
+    .select('nama_event')
+    .eq('id', 1)
+    .maybeSingle();
+
+  const namaEvent = settings?.nama_event?.trim();
+
+  // 2. Ambil nomor berikutnya
+  const { data: nomor, error } = await supabase.rpc('next_session_number');
   if (error) throw error;
 
-  const nomor = data || 1;
-  return 'potoboks' + String(nomor).padStart(3, '0');
+  const nomorStr = String(nomor || 1).padStart(3, '0');
+
+  if (namaEvent) {
+    // Sanitasi nama event: lowercase, ganti spasi jadi dash
+    const prefix = namaEvent
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .slice(0, 30);
+
+    return prefix + '-' + nomorStr;
+  }
+
+  return 'potoboks' + nomorStr;
 }
 
 async function dataUrlToBlob(dataUrl) {
@@ -31,10 +55,6 @@ async function uploadFile(path, blob) {
   return data.publicUrl;
 }
 
-/**
- * Upload foto & final, update session yang sudah ada.
- * Session sudah dibuat di halaman /bayar (slug sementara).
- */
 export async function simpanSesi({
   paket,
   frame,
@@ -45,10 +65,9 @@ export async function simpanSesi({
 }) {
   if (!sessionId) throw new Error('sessionId tidak ditemukan');
 
-  // 1. Generate slug nomor urut
   const slug = await generateSlug();
 
-  // 2. Upload foto mentah
+  // Upload foto mentah
   const photoUrls = [];
   for (let i = 0; i < photos.length; i++) {
     const blob = await dataUrlToBlob(photos[i]);
@@ -57,14 +76,14 @@ export async function simpanSesi({
     photoUrls.push(url);
   }
 
-  // 3. Upload final
+  // Upload final
   let finalUrl = null;
   if (finalDataUrl) {
     const finalBlob = await dataUrlToBlob(finalDataUrl);
     finalUrl = await uploadFile(sessionId + '/final.jpg', finalBlob);
   }
 
-  // 4. UPDATE session yang sudah ada
+  // Update session
   const { error: errUpd } = await supabase
     .from('sessions')
     .update({
@@ -78,10 +97,9 @@ export async function simpanSesi({
 
   if (errUpd) throw errUpd;
 
-  // 5. Hapus dulu session_photos (jaga-jaga kalau retake / upload ulang)
+  // Insert foto
   await supabase.from('session_photos').delete().eq('session_id', sessionId);
 
-  // 6. Insert ulang
   if (photoUrls.length) {
     const rows = photoUrls.map((url, i) => ({
       session_id: sessionId,
@@ -96,28 +114,4 @@ export async function simpanSesi({
 
   const shareUrl = window.location.origin + '/r/' + slug;
   return { sessionId, slug, shareUrl };
-}
-
-/**
- * Rename slug manual (dari admin)
- */
-export async function renameSlug(sessionId, slugBaru) {
-  const slug = slugBaru
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9-]/g, '')
-    .replace(/-+/g, '-')
-    .slice(0, 40);
-
-  if (!slug) throw new Error('Slug tidak valid');
-
-  const { data, error } = await supabase
-    .from('sessions')
-    .update({ slug })
-    .eq('id', sessionId)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
 }

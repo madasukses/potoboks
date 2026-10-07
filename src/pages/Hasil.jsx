@@ -12,6 +12,7 @@ export default function Hasil() {
 
   const [finalImg, setFinalImg] = useState(null);
   const [shareUrl, setShareUrl] = useState(null);
+  const [slug, setSlug] = useState(null);
   const [status, setStatus] = useState('loading');
   const [errMsg, setErrMsg] = useState(null);
 
@@ -43,6 +44,7 @@ export default function Hasil() {
           sessionId,
         });
         setShareUrl(result.shareUrl);
+        setSlug(result.slug);
         setStatus('done');
       } catch (e) {
         console.error('Upload error:', e);
@@ -57,7 +59,7 @@ export default function Hasil() {
     if (!finalImg) return;
     const a = document.createElement('a');
     a.href = finalImg;
-    a.download = 'potoboks-' + Date.now() + '.jpg';
+    a.download = (slug || 'potoboks') + '-final.jpg';
     a.click();
   };
 
@@ -124,7 +126,7 @@ export default function Hasil() {
             )}
           </div>
 
-          <Button onClick={download} className="w-full">
+          <Button onClick={download} className="w-full" disabled={!slug}>
             Download Lokal
           </Button>
           <Button onClick={selesai} variant="secondary" className="w-full">

@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import Button from '../../components/Button';
+import Modal from '../../components/admin/Modal';
 import {
   getSettings,
   updateSettings,
   uploadLogo,
+  resetEvent,
 } from '../../lib/settings';
 import { listFrame } from '../../lib/frame';
 
@@ -15,6 +17,8 @@ export default function Pengaturan() {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+  const [modalReset, setModalReset] = useState(false);
+  const [working, setWorking] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -59,7 +63,6 @@ export default function Pengaturan() {
     setSaving(true);
     setError(null);
     setSuccess(false);
-
     try {
       await updateSettings(form);
       setSuccess(true);
@@ -68,6 +71,21 @@ export default function Pengaturan() {
       setError(e.message);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const onResetEvent = async () => {
+    setWorking(true);
+    try {
+      await resetEvent();
+      setModalReset(false);
+      await load();
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (e) {
+      alert('Gagal reset event: ' + e.message);
+    } finally {
+      setWorking(false);
     }
   };
 
@@ -81,6 +99,17 @@ export default function Pengaturan() {
 
   if (!form) return null;
 
+  // Preview slug
+  const previewSlug = form.nama_event
+    ? form.nama_event
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .slice(0, 30) + '-001'
+    : 'potoboks001';
+
   return (
     <div>
       <div className="mb-6">
@@ -88,7 +117,7 @@ export default function Pengaturan() {
           ⚙️ Pengaturan
         </h1>
         <p className="text-benhur-700/70 text-sm">
-          Identitas bisnis, branding, dan preferensi default.
+          Identitas bisnis, branding, event, dan preferensi default.
         </p>
       </div>
 
@@ -97,14 +126,53 @@ export default function Pengaturan() {
           {error}
         </div>
       )}
-
       {success && (
         <div className="bg-green-50 border-2 border-green-400 rounded-xl p-3 text-sm text-green-700 font-medium mb-4">
-          ✓ Pengaturan tersimpan
+          ✓ Berhasil disimpan
         </div>
       )}
 
       <form onSubmit={submit} className="space-y-5">
+        {/* EVENT */}
+        <Section title="🎉 Nama Event (Opsional)">
+          <p className="text-sm text-benhur-700 -mt-2 mb-2">
+            Isi untuk ganti prefix slug dari <code>potoboks001</code> menjadi
+            nama event, misal <code>budi-wedding-001</code>.
+          </p>
+          <Field label="NAMA EVENT">
+            <input
+              type="text"
+              value={form.nama_event || ''}
+              onChange={(e) => set('nama_event', e.target.value)}
+              placeholder="contoh: budi-wedding-2026"
+              className="w-full border-4 border-benhur-900 rounded-2xl px-4 py-2.5 font-medium focus:outline-none focus:ring-4 focus:ring-kuning-300"
+            />
+          </Field>
+
+          <div className="bg-kuning-100 border-2 border-benhur-900/20 rounded-2xl p-4 text-sm">
+            <div className="font-bold text-benhur-700/70 text-xs tracking-widest mb-1">
+              PREVIEW SLUG BERIKUTNYA
+            </div>
+            <div className="font-mono font-extrabold text-benhur-900 text-lg">
+              {previewSlug}
+            </div>
+            <div className="text-xs text-benhur-700/60 mt-1">
+              Sesi berikutnya akan memakai slug ini
+            </div>
+          </div>
+
+          <div className="flex justify-end pt-2">
+            <button
+              type="button"
+              onClick={() => setModalReset(true)}
+              className="text-xs font-bold text-red-600 underline"
+            >
+              🔄 Reset Event (kembali ke potoboks)
+            </button>
+          </div>
+        </Section>
+
+        {/* IDENTITAS */}
         <Section title="🏢 Identitas Bisnis">
           <div className="grid md:grid-cols-2 gap-4">
             <Field label="NAMA BISNIS">
@@ -191,6 +259,7 @@ export default function Pengaturan() {
           </Field>
         </Section>
 
+        {/* KONTAK */}
         <Section title="📞 Kontak & Sosial Media">
           <div className="grid md:grid-cols-3 gap-4">
             <Field label="WHATSAPP">
@@ -223,6 +292,7 @@ export default function Pengaturan() {
           </div>
         </Section>
 
+        {/* PREFERENSI */}
         <Section title="🎨 Preferensi Default">
           <div className="grid md:grid-cols-3 gap-4">
             <Field label="WARNA AKSEN">
@@ -278,63 +348,48 @@ export default function Pengaturan() {
           </div>
         </Section>
 
-        <Section title="👀 Preview Halaman Publik">
-          <div
-            className="border-4 border-benhur-900 rounded-2xl p-6 text-center"
-            style={{ background: '#FFF6D6' }}
-          >
-            {form.logo_url && (
-              <img
-                src={form.logo_url}
-                alt="Logo"
-                className="max-h-16 mx-auto mb-3"
-              />
-            )}
-            <div
-              className="font-display text-2xl mb-1"
-              style={{ color: '#0A1F44' }}
-            >
-              {form.nama_bisnis || 'potoboks'}
-            </div>
-            <div className="text-sm text-benhur-700/70">
-              {form.tagline || 'capture moments, create memories'}
-            </div>
-
-            <div className="flex justify-center gap-2 mt-4 flex-wrap">
-              {form.whatsapp && (
-                <span className="text-xs bg-white border-2 border-benhur-900 rounded-full px-3 py-1 font-bold">
-                  💬 WhatsApp
-                </span>
-              )}
-              {form.instagram && (
-                <span className="text-xs bg-white border-2 border-benhur-900 rounded-full px-3 py-1 font-bold">
-                  📷 Instagram
-                </span>
-              )}
-              {form.tiktok && (
-                <span className="text-xs bg-white border-2 border-benhur-900 rounded-full px-3 py-1 font-bold">
-                  🎵 TikTok
-                </span>
-              )}
-            </div>
-
-            {form.alamat_publik && (
-              <div
-                className="mt-4 inline-block text-xs font-mono px-3 py-1 rounded-full border-2 border-benhur-900"
-                style={{ background: form.warna_aksen || '#FFC93C' }}
-              >
-                potoboks.id/p/{form.alamat_publik}
-              </div>
-            )}
-          </div>
-        </Section>
-
         <div className="flex justify-end">
           <Button type="submit" disabled={saving || uploading}>
             {saving ? 'Menyimpan...' : 'Simpan Pengaturan'}
           </Button>
         </div>
       </form>
+
+      {/* Modal Reset Event */}
+      <Modal
+        open={modalReset}
+        onClose={() => setModalReset(false)}
+        title="Reset Event"
+        maxWidth="max-w-md"
+      >
+        <p className="text-benhur-700 text-sm">
+          Yakin ingin reset event? Ini akan:
+        </p>
+        <ul className="text-sm text-benhur-700 mt-2 space-y-1 list-disc pl-5">
+          <li>Kosongkan <strong>Nama Event</strong></li>
+          <li>Reset nomor urut kembali ke <strong>1</strong></li>
+          <li>Sesi berikutnya jadi <code>potoboks001</code></li>
+        </ul>
+        <p className="text-red-600 text-sm mt-3 font-medium">
+          ⚠️ Sesi lama tidak terpengaruh, hanya slug baru yang berubah.
+        </p>
+        <div className="flex gap-3 justify-end mt-6">
+          <Button
+            variant="ghost"
+            onClick={() => setModalReset(false)}
+            disabled={working}
+          >
+            Batal
+          </Button>
+          <Button
+            onClick={onResetEvent}
+            disabled={working}
+            className="!bg-red-500 !text-white"
+          >
+            {working ? 'Memproses...' : 'Reset Event'}
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }

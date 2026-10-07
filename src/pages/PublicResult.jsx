@@ -11,7 +11,6 @@ export default function PublicResult() {
 
   useEffect(() => {
     (async () => {
-      // Ambil session by slug
       const { data: s, error: errS } = await supabase
         .from('sessions')
         .select('*')
@@ -26,7 +25,6 @@ export default function PublicResult() {
 
       setSession(s);
 
-      // Ambil foto mentah
       const { data: ph } = await supabase
         .from('session_photos')
         .select('*')
@@ -45,6 +43,9 @@ export default function PublicResult() {
     a.target = '_blank';
     a.click();
   };
+
+  // Nama file pakai slug + suffix
+  const fname = (suffix) => (slug || 'potoboks') + '-' + suffix + '.jpg';
 
   if (loading) {
     return (
@@ -69,7 +70,6 @@ export default function PublicResult() {
   return (
     <div className="min-h-screen bg-kuning-100 p-4 md:p-8">
       <div className="max-w-3xl mx-auto space-y-6">
-        {/* Header */}
         <div className="text-center">
           <div className="inline-block bg-benhur-900 text-kuning-300 text-[10px] font-bold tracking-[0.4em] px-3 py-1 rounded-full">
             POTOBOKS
@@ -78,25 +78,32 @@ export default function PublicResult() {
             Hasil Fotomu
           </h1>
           <p className="text-benhur-700 text-sm mt-2">
-            {session.paket_nama} · {new Date(session.created_at).toLocaleDateString('id-ID', {
+            {session.paket_nama} ·{' '}
+            {new Date(session.created_at).toLocaleDateString('id-ID', {
               day: 'numeric',
               month: 'long',
               year: 'numeric',
             })}
           </p>
+          <div className="text-xs font-mono text-benhur-700/60 mt-1">
+            {slug}
+          </div>
         </div>
 
-        {/* Final */}
         {session.final_image_url && (
           <div className="bg-white border-4 border-benhur-900 rounded-3xl p-4 shadow-[8px_8px_0_0_#0A1F44]">
-            <h2 className="font-extrabold text-benhur-900 mb-3">📸 Hasil Final</h2>
+            <h2 className="font-extrabold text-benhur-900 mb-3">
+              📸 Hasil Final
+            </h2>
             <img
               src={session.final_image_url}
               alt="Hasil final"
               className="w-full rounded-2xl"
             />
             <button
-              onClick={() => download(session.final_image_url, `potoboks-${slug}-final.jpg`)}
+              onClick={() =>
+                download(session.final_image_url, fname('final'))
+              }
               className="btn-sticker bg-kuning-500 text-benhur-900 w-full mt-4"
             >
               ⬇ Download Final
@@ -104,20 +111,26 @@ export default function PublicResult() {
           </div>
         )}
 
-        {/* Foto mentah */}
         {photos.length > 0 && (
           <div className="bg-white border-4 border-benhur-900 rounded-3xl p-4 shadow-[8px_8px_0_0_#0A1F44]">
-            <h2 className="font-extrabold text-benhur-900 mb-3">🖼 Foto Mentah</h2>
+            <h2 className="font-extrabold text-benhur-900 mb-3">
+              🖼 Foto Mentah
+            </h2>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {photos.map((p) => (
                 <button
                   key={p.id}
-                  onClick={() => download(p.photo_url, `potoboks-${slug}-${p.slot_index + 1}.jpg`)}
+                  onClick={() =>
+                    download(
+                      p.photo_url,
+                      fname('foto-' + (p.slot_index + 1))
+                    )
+                  }
                   className="rounded-xl overflow-hidden border-2 border-benhur-900/20 hover:border-benhur-900 transition-colors"
                 >
                   <img
                     src={p.photo_url}
-                    alt={`Foto ${p.slot_index + 1}`}
+                    alt={'Foto ' + (p.slot_index + 1)}
                     className="w-full block"
                   />
                 </button>
@@ -129,15 +142,16 @@ export default function PublicResult() {
           </div>
         )}
 
-        {/* Info retensi */}
-        <div className="text-center text-xs text-benhur-700/70">
-          Foto mentah akan tersimpan sampai{' '}
-          {new Date(session.expired_at).toLocaleDateString('id-ID', {
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric',
-          })}
-        </div>
+        {session.expired_at && (
+          <div className="text-center text-xs text-benhur-700/70">
+            Foto mentah akan tersimpan sampai{' '}
+            {new Date(session.expired_at).toLocaleDateString('id-ID', {
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric',
+            })}
+          </div>
+        )}
 
         <div className="text-center pt-4">
           <a

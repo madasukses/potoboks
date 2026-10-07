@@ -101,7 +101,7 @@ export default function SesiDetail() {
             {fmtDate(session.created_at)}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button onClick={onDownload} disabled={working}>
             ⬇ Download ZIP
           </Button>
@@ -164,7 +164,7 @@ export default function SesiDetail() {
               <InfoRow label="Slug" value={session.slug} mono />
               <InfoRow label="Paket" value={session.paket_nama} />
               <InfoRow label="Harga" value={fmtRp(session.harga)} />
-              <InfoRow label="Frame" value={session.frame_id} mono />
+              <InfoRow label="Frame" value={session.frame_id || '—'} mono />
               <InfoRow label="Slot" value={session.slot_count} />
               <InfoRow label="Retake sisa" value={session.retake_left} />
             </dl>
