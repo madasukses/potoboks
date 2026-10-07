@@ -1,7 +1,15 @@
 import { supabase, BUCKET } from '../supabase';
 
-function generateSlug() {
-  return Math.random().toString(36).slice(2, 8);
+/**
+ * Generate slug nomor urut: potoboks001, potoboks002, ...
+ * Pakai RPC Supabase (next_session_number) supaya atomic.
+ */
+async function generateSlug() {
+  const { data, error } = await supabase.rpc('next_session_number');
+  if (error) throw error;
+
+  const nomor = data || 1;
+  return 'potoboks' + String(nomor).padStart(3, '0');
 }
 
 async function dataUrlToBlob(dataUrl) {
@@ -25,7 +33,7 @@ async function uploadFile(path, blob) {
 
 /**
  * Upload foto & final, update session yang sudah ada.
- * Session sudah dibuat di halaman /bayar (dengan slug sementara).
+ * Session sudah dibuat di halaman /bayar (slug sementara).
  */
 export async function simpanSesi({
   paket,
@@ -37,9 +45,10 @@ export async function simpanSesi({
 }) {
   if (!sessionId) throw new Error('sessionId tidak ditemukan');
 
-  const slug = generateSlug();
+  // 1. Generate slug nomor urut
+  const slug = await generateSlug();
 
-  // 1. Upload foto mentah
+  // 2. Upload foto mentah
   const photoUrls = [];
   for (let i = 0; i < photos.length; i++) {
     const blob = await dataUrlToBlob(photos[i]);
@@ -48,14 +57,14 @@ export async function simpanSesi({
     photoUrls.push(url);
   }
 
-  // 2. Upload final
+  // 3. Upload final
   let finalUrl = null;
   if (finalDataUrl) {
     const finalBlob = await dataUrlToBlob(finalDataUrl);
     finalUrl = await uploadFile(sessionId + '/final.jpg', finalBlob);
   }
 
-  // 3. UPDATE session yang sudah ada
+  // 4. UPDATE session yang sudah ada
   const { error: errUpd } = await supabase
     .from('sessions')
     .update({
@@ -69,10 +78,10 @@ export async function simpanSesi({
 
   if (errUpd) throw errUpd;
 
-  // 4. INSERT session_photos (kalau belum ada)
-  //    Hapus dulu untuk jaga-jaga (kalau retake / upload ulang)
+  // 5. Hapus dulu session_photos (jaga-jaga kalau retake / upload ulang)
   await supabase.from('session_photos').delete().eq('session_id', sessionId);
 
+  // 6. Insert ulang
   if (photoUrls.length) {
     const rows = photoUrls.map((url, i) => ({
       session_id: sessionId,
@@ -87,4 +96,28 @@ export async function simpanSesi({
 
   const shareUrl = window.location.origin + '/r/' + slug;
   return { sessionId, slug, shareUrl };
+}
+
+/**
+ * Rename slug manual (dari admin)
+ */
+export async function renameSlug(sessionId, slugBaru) {
+  const slug = slugBaru
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9-]/g, '')
+    .replace(/-+/g, '-')
+    .slice(0, 40);
+
+  if (!slug) throw new Error('Slug tidak valid');
+
+  const { data, error } = await supabase
+    .from('sessions')
+    .update({ slug })
+    .eq('id', sessionId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
 }
