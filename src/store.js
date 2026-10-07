@@ -5,6 +5,7 @@ const KEY = 'potoboks-state';
 export const useStore = create((set) => ({
   paket: null,
   frame: null,
+  voucher: null,
   slotCount: 6,
   photos: [],
   retakeLeft: 3,
@@ -12,6 +13,7 @@ export const useStore = create((set) => ({
 
   setPaket: (p) => set({ paket: p }),
   setFrame: (f) => set({ frame: f }),
+  setVoucher: (v) => set({ voucher: v }),
   setSlotCount: (n) => set({ slotCount: n, photos: [], retakeLeft: 3 }),
   setSessionId: (id) => set({ sessionId: id }),
 
@@ -32,16 +34,32 @@ export const useStore = create((set) => ({
   reset: () => {
     localStorage.removeItem(KEY);
     localStorage.removeItem('potoboks-final');
-    set({ paket: null, frame: null, slotCount: 6, photos: [], retakeLeft: 3, sessionId: null });
+    set({
+      paket: null,
+      frame: null,
+      voucher: null,
+      slotCount: 6,
+      photos: [],
+      retakeLeft: 3,
+      sessionId: null,
+    });
   },
 }));
 
 function persist(state) {
   try {
-    localStorage.setItem(KEY, JSON.stringify({
-      paket: state.paket, frame: state.frame, slotCount: state.slotCount,
-      photos: state.photos, retakeLeft: state.retakeLeft, sessionId: state.sessionId,
-    }));
+    localStorage.setItem(
+      KEY,
+      JSON.stringify({
+        paket: state.paket,
+        frame: state.frame,
+        voucher: state.voucher,
+        slotCount: state.slotCount,
+        photos: state.photos,
+        retakeLeft: state.retakeLeft,
+        sessionId: state.sessionId,
+      })
+    );
   } catch (e) {}
 }
 

@@ -5,14 +5,29 @@ import { supabase } from '../supabase';
 import Timer from '../components/Timer';
 
 const FALLBACK = [
-  { id:'pop-snap', nama:'Pop Snap', harga:15000, slot:4, deskripsi:'1 cetakan + semua softfile', catatan:'1 cetakan termasuk · extra Rp 5.000/cetak' },
-  { id:'snap-fast', nama:'SnapFast', harga:20000, slot:6, deskripsi:'1 cetakan cepat + softfile', catatan:'1 cetakan termasuk · extra Rp 5.000/cetak' },
+  {
+    id: 'pop-snap',
+    nama: 'Pop Snap',
+    harga: 15000,
+    slot: 4,
+    deskripsi: '1 cetakan + semua softfile',
+    catatan: '1 cetakan termasuk · extra Rp 5.000/cetak',
+  },
+  {
+    id: 'snap-fast',
+    nama: 'SnapFast',
+    harga: 20000,
+    slot: 6,
+    deskripsi: '1 cetakan cepat + softfile',
+    catatan: '1 cetakan termasuk · extra Rp 5.000/cetak',
+  },
 ];
 
 export default function PilihPaket() {
   const nav = useNavigate();
-  const setPaket = useStore(s => s.setPaket);
-  const setSlotCount = useStore(s => s.setSlotCount);
+  const setPaket = useStore((s) => s.setPaket);
+  const setSlotCount = useStore((s) => s.setSlotCount);
+  const setVoucher = useStore((s) => s.setVoucher);
   const [list, setList] = useState(FALLBACK);
 
   useEffect(() => {
@@ -29,7 +44,8 @@ export default function PilihPaket() {
   const pilih = (p) => {
     setPaket(p);
     setSlotCount(p.slot);
-    nav('/frame');
+    setVoucher(null);
+    nav('/bayar');
   };
 
   return (
@@ -46,18 +62,18 @@ export default function PilihPaket() {
           </button>
           <div className="text-right">
             <div className="text-xs font-bold tracking-widest text-benhur-700/70">
-              LANGKAH 1 DARI 3
+              LANGKAH 1 DARI 4
             </div>
-            <div className="font-display text-lg text-benhur-900">Pilih Paket</div>
+            <div className="font-display text-lg text-benhur-900">
+              Pilih Paket
+            </div>
           </div>
         </div>
 
         <h2 className="font-display text-4xl md:text-5xl text-benhur-900 mb-2">
           Mau paket yang mana?
         </h2>
-        <p className="text-benhur-700/70 mb-8">
-          Tap paket untuk melanjutkan.
-        </p>
+        <p className="text-benhur-700/70 mb-8">Tap paket untuk melanjutkan.</p>
 
         <div className="grid md:grid-cols-2 gap-6">
           {list.map((p) => (
