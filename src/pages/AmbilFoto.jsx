@@ -73,11 +73,13 @@ export default function AmbilFoto() {
   const { slots } = hitungLayout(slotCount);
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-benhur-900">
+    <div className="h-screen w-screen overflow-hidden flex flex-col md:flex-row bg-benhur-900">
       <Timer detik={240} onHabis={() => nav('/')} />
 
-      <div className="flex-1 relative bg-benhur-700 flex flex-col">
-        <div className="p-4 flex items-center justify-between text-white">
+      {/* KIRI: live view */}
+      <div className="flex-1 relative bg-benhur-700 flex flex-col min-h-0">
+        {/* Header atas live view */}
+        <div className="p-3 md:p-4 flex items-center justify-between text-white shrink-0">
           <div className="bg-white/10 border-2 border-white rounded-xl px-3 py-1 text-sm font-bold">
             <span className="inline-block w-2 h-2 rounded-full bg-red-500 mr-2 align-middle" />
             Foto {Math.min(photos.length + 1, slotCount)} / {slotCount}
@@ -88,17 +90,18 @@ export default function AmbilFoto() {
           </button>
         </div>
 
-        <div className="relative flex-1 flex items-center justify-center p-4">
+        {/* Kamera */}
+        <div className="flex-1 min-h-0 flex items-center justify-center p-3 md:p-4">
           {error ? (
             <div className="text-white text-center p-6">{error}</div>
           ) : (
-            <div className="relative w-full max-w-2xl aspect-video rounded-3xl overflow-hidden border-4 border-white">
+            <div className="relative h-full max-h-full w-full max-w-full aspect-video mx-auto rounded-3xl overflow-hidden border-4 border-white">
               <video ref={videoRef} autoPlay playsInline muted
-                className="w-full h-full object-cover"
+                className="absolute inset-0 w-full h-full object-cover"
                 style={{ transform: mirror ? 'scaleX(-1)' : 'none' }} />
               {countdown !== null && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-                  <div className="font-display text-[120px] text-white drop-shadow-[6px_6px_0_#0A1F44]">
+                  <div className="font-display text-[120px] md:text-[180px] text-white drop-shadow-[6px_6px_0_#0A1F44] animate-pulse">
                     {countdown}
                   </div>
                 </div>
@@ -106,35 +109,47 @@ export default function AmbilFoto() {
             </div>
           )}
         </div>
-
-        <div className="p-6 flex flex-col items-center gap-3">
-          <h3 className="text-white font-extrabold text-2xl">Siap berfoto?</h3>
-          <p className="text-white/70 text-sm">Atur posisi dulu, lalu tap Mulai</p>
-          <Button onClick={mulaiSlot}
-            disabled={photos.length >= slotCount || countdown !== null}
-            className="text-xl">
-            {countdown !== null ? '...' : `Mulai (${photos.length}/${slotCount})`}
-          </Button>
-        </div>
       </div>
 
-      <div className="w-full md:w-[380px] bg-black p-4 flex flex-col">
-        <div className="flex-1 rounded-2xl p-3 flex flex-col gap-2"
-          style={{ background: frame?.warna_bg || '#fff' }}>
-          {slots.map((_, i) => (
-            <div key={i}
-              className="rounded-xl bg-white/40 border-2 border-benhur-900/20 flex items-center justify-center overflow-hidden"
-              style={{ aspectRatio: '4/3' }}>
-              {photos[i] ? (
-                <img src={photos[i]} alt={`Foto ${i+1}`} className="w-full h-full object-cover" />
-              ) : (
-                <span className="text-benhur-900/50 font-bold">Photo {i+1}</span>
-              )}
-            </div>
-          ))}
+      {/* KANAN: preview + tombol */}
+      <div className="w-full md:w-[340px] lg:w-[380px] bg-black flex flex-col shrink-0 min-h-0">
+        {/* Preview slots */}
+        <div className="flex-1 min-h-0 p-3 md:p-4 flex flex-col">
+          <div
+            className="flex-1 min-h-0 rounded-2xl p-2 md:p-3 flex flex-col gap-1.5 md:gap-2 overflow-hidden"
+            style={{ background: frame?.warna_bg || '#fff' }}
+          >
+            {slots.map((_, i) => (
+              <div
+                key={i}
+                className="flex-1 min-h-0 rounded-xl bg-white/40 border-2 border-benhur-900/20 flex items-center justify-center overflow-hidden"
+              >
+                {photos[i] ? (
+                  <img src={photos[i]} alt={`Foto ${i+1}`} className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-benhur-900/50 font-bold text-sm">
+                    Photo {i+1}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Info kecil */}
+          <div className="text-center text-white/60 text-xs mt-2 shrink-0">
+            Foto {photos.length} dari {slotCount}
+          </div>
         </div>
-        <div className="text-center text-white/60 text-sm mt-3">
-          Foto {photos.length} dari {slotCount}
+
+        {/* TOMBOL MULAI — di bawah preview */}
+        <div className="p-3 md:p-4 border-t-2 border-white/10 shrink-0 bg-black">
+          <Button
+            onClick={mulaiSlot}
+            disabled={photos.length >= slotCount || countdown !== null}
+            className="w-full text-lg md:text-xl !py-4"
+          >
+            {countdown !== null ? '...' : `▶ Mulai (${photos.length}/${slotCount})`}
+          </Button>
         </div>
       </div>
     </div>
